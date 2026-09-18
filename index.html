@@ -2,36 +2,119 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>淡大車位查詢系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>場地快速點車位系統</title>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f4f6f9; margin: 0; padding: 40px 16px; display: flex; justify-content: center; }
-    .container { width: 100%; max-width: 550px; background: #ffffff; padding: 28px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
-    h2 { margin-top: 0; color: #1e293b; text-align: center; }
-    .search-box { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 8px; outline: none; transition: border-color 0.2s; }
-    .search-box:focus { border-color: #3b82f6; }
-    .result-list { margin-top: 20px; list-style: none; padding: 0; }
-    .result-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
-    .result-item:last-child { border-bottom: none; }
-    .item-name { font-weight: 500; color: #334155; }
-    .btn-link { background: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; transition: background 0.2s; }
-    .btn-link:hover { background: #1d4ed8; }
-    .no-result { text-align: center; color: #94a3b8; padding: 20px 0; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: #f1f5f9; margin: 0; padding: 20px 12px; color: #1e293b; }
+    .container { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 24px; }
+    
+    /* 頂部狀態列 */
+    .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; }
+    .header-title { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; }
+    .user-tag { font-size: 13px; background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-logout { background: none; border: none; color: #ef4444; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0; }
+
+    /* 搜尋欄位 */
+    .search-box { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 10px; outline: none; transition: all 0.2s; }
+    .search-box:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    
+    /* 分類區塊標題 */
+    .section-title { font-size: 14px; font-weight: 700; color: #64748b; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+    
+    /* 列表項目 */
+    .list-group { list-style: none; padding: 0; margin: 0; }
+    .list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; transition: background 0.15s; border-radius: 8px; }
+    .list-item:hover { background-color: #f8fafc; }
+    .item-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .star-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0 4px; color: #cbd5e1; transition: transform 0.15s, color 0.15s; }
+    .star-btn.active { color: #f59e0b; }
+    .star-btn:active { transform: scale(1.3); }
+    .item-text { font-size: 15px; font-weight: 500; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .btn-go { background: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; margin-left: 10px; transition: background 0.2s; }
+    .btn-go:hover { background: #1d4ed8; }
+    .empty-tip { text-align: center; color: #94a3b8; font-size: 14px; padding: 16px 0; }
+
+    /* 工號驗證彈窗 (Overlay) */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+    .modal-box { background: #ffffff; width: 100%; max-width: 380px; border-radius: 16px; padding: 28px 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); text-align: center; }
+    .modal-box h3 { margin: 0 0 10px 0; font-size: 19px; color: #0f172a; }
+    .modal-box p { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .input-id { width: 100%; padding: 12px 14px; font-size: 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; outline: none; margin-bottom: 12px; text-align: center; text-transform: uppercase; }
+    .input-id:focus { border-color: #2563eb; }
+    .btn-submit { width: 100%; background: #2563eb; color: #fff; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-submit:hover { background: #1d4ed8; }
+    .error-msg { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
+
+    /* 本地管理工具抽屜 */
+    .admin-footer { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 15px; text-align: center; }
+    .admin-btn { font-size: 12px; color: #64748b; background: none; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>淡大車位查詢</h2>
-  <input type="text" id="searchInput" class="search-box" placeholder="輸入名稱搜尋（例如：商管大樓、操場...）">
-  <ul id="resultList" class="result-list"></ul>
+<!-- 工號審核彈窗 -->
+<div id="authModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3>系統登入驗證</h3>
+    <p>請輸入內部授權工號以進入系統</p>
+    <input type="text" id="staffIdInput" class="input-id" placeholder="請輸入工號 (例: A1234)" autocomplete="off">
+    <button class="btn-submit" onclick="handleAuth()">驗證並進入</button>
+    <div id="authError" class="error-msg">⚠️ 工號錯誤或未授權，請聯繫主管</div>
+  </div>
+</div>
+
+<!-- 主要內容區 -->
+<div class="container" id="mainApp" style="display: none;">
+  <div class="header-bar">
+    <h1 class="header-title">場地車位點位系統</h1>
+    <div class="user-tag">
+      工號: <span id="currentStaffId"></span>
+      <button class="btn-logout" onclick="handleLogout()">登出</button>
+    </div>
+  </div>
+
+  <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜尋場地名稱或代號（例: 忠誠路、YA376...）">
+
+  <!-- 釘選我的最愛區塊 -->
+  <div id="favoriteSection" style="display: none;">
+    <div class="section-title">⭐ 我的常用場地 (釘選)</div>
+    <ul id="favoriteList" class="list-group"></ul>
+  </div>
+
+  <!-- 全部場地列表 -->
+  <div class="section-title" id="allListTitle">📍 全部場地列表</div>
+  <ul id="allList" class="list-group"></ul>
+
+  <!-- 底部稽核日誌檢視 (管理員功能) -->
+  <div class="admin-footer">
+    <button class="admin-btn" onclick="exportLoginLogs()">📥 匯出此裝置登入日誌 (CSV)</button>
+  </div>
 </div>
 
 <script>
-  // 1. 將你的資料表填入此處
+  /* ========================================================
+     1. 內碼設定區 (工號白名單)
+     可以在這裡增減授權的工號，支援大小寫通用
+  ======================================================== */
+  const ALLOWED_STAFF_IDS = [
+    "ADMIN",
+    "PSS001",
+    "PSS002",
+    "A1001",
+    "B2002",
+    "T12345"
+  ];
+
+  /* 遠端稽核記錄 (可選)：如果你有設定 Google Form 或 Webhook，可填入網址，無則留空 */
+  const REMOTE_AUDIT_WEBHOOK_URL = ""; // 例: "https://script.google.com/macros/s/xxxx/exec"
+
+  /* ========================================================
+     2. 車位完整資料庫 (你提供的清單資料)
+  ======================================================== */
   const parkingData = [
-        { name: "城市車旅全聯天母天玉", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_YA376/login" },
+   { name: "城市車旅全聯天母天玉", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_YA376/login" },
   { name: "天母傑仕堡", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_YA372/login" },
   { name: "延平(純月租)", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_純月租/login" },
   { name: "城市車旅士林福德", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_YA426/login" },
@@ -2059,38 +2142,173 @@
   { name: "台東東海", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_HA845/login" },
   { name: "台東傳廣", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_HA846/login" },
   { name: "大義-全聯池上中正", url: "https://outsourced-signin.pss-group.xyz/check-in-system/PSS_HB451/login" },
-,
-
+    /* 其餘站點皆可依此格式直接擴充 */
   ];
 
-  const searchInput = document.getElementById("searchInput");
-  const resultList = document.getElementById("resultList");
+  /* ========================================================
+     3. 登入、審核與稽核日誌邏輯
+  ======================================================== */
+  const AUTH_KEY = "PARKING_SYS_STAFF_ID";
+  const LOGS_KEY = "PARKING_SYS_LOGIN_LOGS";
+  const FAV_KEY = "PARKING_SYS_FAVORITES";
 
-  function renderList(items) {
-    resultList.innerHTML = "";
-    if (items.length === 0) {
-      resultList.innerHTML = `<li class="no-result">查無相符資料</li>`;
-      return;
+  let currentStaff = localStorage.getItem(AUTH_KEY) || "";
+  let favorites = JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+
+  // 記錄登入歷史
+  function recordLogin(staffId) {
+    const timestamp = new Date().toLocaleString("zh-TW", { hour12: false });
+    const logItem = { staffId: staffId, time: timestamp, agent: navigator.userAgent };
+    
+    // 存入本地 LocalStorage
+    let logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+    logs.unshift(logItem); // 最新的排前面
+    if (logs.length > 500) logs.pop(); // 避免超出空間
+    localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+
+    // 如果有填寫遠端記錄 Webhook (例如 Google Sheets)，自動發送
+    if (REMOTE_AUDIT_WEBHOOK_URL) {
+      try {
+        fetch(REMOTE_AUDIT_WEBHOOK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(logItem)
+        });
+      } catch (err) {
+        console.error("遠端日誌發送失敗:", err);
+      }
     }
-    items.forEach(item => {
-      const li = document.createElement("li");
-      li.className = "result-item";
-      li.innerHTML = `
-        <span class="item-name">${item.name}</span>
-        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-link">前往點車位</a>
-      `;
-      resultList.appendChild(li);
-    });
   }
 
-  // 預設顯示全部資料
-  renderList(parkingData);
+  // 驗證工號
+  function handleAuth() {
+    const inputVal = document.getElementById("staffIdInput").value.trim().toUpperCase();
+    const errorEl = document.getElementById("authError");
+    
+    if (ALLOWED_STAFF_IDS.includes(inputVal)) {
+      errorEl.style.display = "none";
+      localStorage.setItem(AUTH_KEY, inputVal);
+      currentStaff = inputVal;
+      recordLogin(inputVal); // 記錄幾點幾分登入
+      initApp();
+    } else {
+      errorEl.style.display = "block";
+    }
+  }
 
-  // 輸入時即時過濾
-  searchInput.addEventListener("input", (e) => {
-    const keyword = e.target.value.trim().toLowerCase();
-    const filtered = parkingData.filter(item => item.name.toLowerCase().includes(keyword));
-    renderList(filtered);
+  // 登出
+  function handleLogout() {
+    if (confirm("確定要登出並切換工號嗎？")) {
+      localStorage.removeItem(AUTH_KEY);
+      location.reload();
+    }
+  }
+
+  // 匯出登入日誌 CSV
+  function exportLoginLogs() {
+    const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+    if (logs.length === 0) {
+      alert("目前尚無登入紀錄！");
+      return;
+    }
+    let csvContent = "\uFEFF工號,登入時間,裝置資訊\n";
+    logs.forEach(l => {
+      csvContent += `"${l.staffId}","${l.time}","${l.agent.replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `點車位系統_登入紀錄_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  }
+
+  /* ========================================================
+     4. 我的最愛 (釘選) 與搜尋渲染
+  ======================================================== */
+  function toggleFavorite(name) {
+    const index = favorites.indexOf(name);
+    if (index > -1) {
+      favorites.splice(index, 1);
+    } else {
+      favorites.push(name);
+    }
+    localStorage.setItem(FAV_KEY, JSON.stringify(favorites));
+    renderAll();
+  }
+
+  function createListItem(item, isFav) {
+    const li = document.createElement("li");
+    li.className = "list-item";
+    li.innerHTML = `
+      <div class="item-info">
+        <button class="star-btn ${isFav ? 'active' : ''}" title="釘選我的最愛" onclick="toggleFavorite('${item.name.replace(/'/g, "\\'")}')">★</button>
+        <span class="item-text" title="${item.name}">${item.name}</span>
+      </div>
+      <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-go">前往點車位</a>
+    `;
+    return li;
+  }
+
+  function renderAll() {
+    const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+    const favSection = document.getElementById("favoriteSection");
+    const favList = document.getElementById("favoriteList");
+    const allList = document.getElementById("allList");
+
+    favList.innerHTML = "";
+    allList.innerHTML = "";
+
+    // 1. 渲染我的最愛 (若有搜尋，同樣支援過濾)
+    const favItems = parkingData.filter(d => favorites.includes(d.name) && d.name.toLowerCase().includes(keyword));
+    if (favorites.length > 0) {
+      favSection.style.display = "block";
+      if (favItems.length === 0 && keyword !== "") {
+        favList.innerHTML = `<li class="empty-tip">我的最愛中無符合關鍵字的場地</li>`;
+      } else {
+        favItems.forEach(item => favList.appendChild(createListItem(item, true)));
+      }
+    } else {
+      favSection.style.display = "none";
+    }
+
+    // 2. 渲染全部列表 (排除已在最愛顯示的，或全部顯示)
+    const filteredAll = parkingData.filter(d => d.name.toLowerCase().includes(keyword));
+    if (filteredAll.length === 0) {
+      allList.innerHTML = `<li class="empty-tip">查無符合的場地代號或名稱</li>`;
+    } else {
+      filteredAll.forEach(item => {
+        const isFav = favorites.includes(item.name);
+        allList.appendChild(createListItem(item, isFav));
+      });
+    }
+  }
+
+  function initApp() {
+    document.getElementById("authModal").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+    document.getElementById("currentStaffId").innerText = currentStaff;
+    renderAll();
+  }
+
+  // 初始化入口
+  window.addEventListener("DOMContentLoaded", () => {
+    // 監聽 Enter 快速登入
+    document.getElementById("staffIdInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleAuth();
+    });
+
+    // 監聽搜尋輸入
+    document.getElementById("searchInput").addEventListener("input", renderAll);
+
+    // 檢查是否已登入
+    if (currentStaff && ALLOWED_STAFF_IDS.includes(currentStaff.toUpperCase())) {
+      initApp();
+    } else {
+      document.getElementById("authModal").style.display = "flex";
+      document.getElementById("mainApp").style.display = "none";
+    }
   });
 </script>
 
