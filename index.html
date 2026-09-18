@@ -145,20 +145,24 @@
     const timestamp = new Date().toLocaleString("zh-TW", { hour12: false });
     const logItem = { staffId: staffId, time: timestamp, agent: navigator.userAgent };
     
+    // 1. 本地儲存
     let logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
     logs.unshift(logItem);
     if (logs.length > 500) logs.pop();
     localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
 
-    if (REMOTE_AUDIT_WEBHOOK_URL) {
-      try {
-        fetch(REMOTE_AUDIT_WEBHOOK_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(logItem)
-        });
-      } catch (err) {}
+    // 2. 背景傳送至 Google 試算表
+    if (REMOTE_AUDIT_WEBHOOK_URL && REMOTE_AUDIT_WEBHOOK_URL.trim() !== "") {
+      fetch(REMOTE_AUDIT_WEBHOOK_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(logItem)
+      }).then(() => {
+        console.log("登入紀錄已送出至 Google 試算表");
+      }).catch(err => {
+        console.error("發送失敗:", err);
+      });
     }
   }
 
