@@ -141,11 +141,17 @@
   let currentStaff = localStorage.getItem(AUTH_KEY) || "";
   let favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '["TA001 城市車旅海安站"]');
 
-  function recordLogin(staffId) {
+ // 通用日誌發送函式
+  function sendAuditLog(action, detail) {
     const timestamp = new Date().toLocaleString("zh-TW", { hour12: false });
-    const logItem = { staffId: staffId, time: timestamp, agent: navigator.userAgent };
-    
-    // 1. 本地儲存
+    const logItem = { 
+      time: timestamp, 
+      staffId: currentStaff || "未登入", 
+      action: action, 
+      detail: detail 
+    };
+
+    // 1. 本地儲存備查
     let logs = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
     logs.unshift(logItem);
     if (logs.length > 500) logs.pop();
@@ -158,12 +164,18 @@
         mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(logItem)
-      }).then(() => {
-        console.log("登入紀錄已送出至 Google 試算表");
-      }).catch(err => {
-        console.error("發送失敗:", err);
-      });
+      }).catch(err => console.error("日誌發送失敗:", err));
     }
+  }
+
+  // 登入時呼叫
+  function recordLogin(staffId) {
+    sendAuditLog("登入系統", "登入成功 (裝置: " + navigator.userAgent.substring(0, 30) + "...)");
+  }
+
+  // 點擊場地時呼叫
+  function handleTrackClick(siteName) {
+    sendAuditLog("點擊前往車位", siteName);
   }
 
   function handleAuth() {
@@ -228,7 +240,7 @@
         <button class="star-btn ${isFav ? 'active' : ''}" title="點擊切換最愛" onclick="toggleFavorite('${item.name.replace(/'/g, "\\'")}')">★</button>
         <span class="item-text" title="${item.name}">${item.name}</span>
       </div>
-      <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-go">前往點車位</a>
+      <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-go" onclick="handleTrackClick('${safeName}')">前往點車位</a>
     `;
     return li;
   }
